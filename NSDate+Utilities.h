@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
+#define D_SECOND	1
 #define D_MINUTE	60
 #define D_HOUR		3600
 #define D_DAY		86400
@@ -81,10 +82,16 @@
 - (NSDate *) dateBySubtractingHours: (NSInteger) dHours;
 - (NSDate *) dateByAddingMinutes: (NSInteger) dMinutes;
 - (NSDate *) dateBySubtractingMinutes: (NSInteger) dMinutes;
+- (NSDate *) dateByAddingSeconds: (NSInteger) dSeconds;
+- (NSDate *) dateBySubtractingSeconds: (NSInteger) dSeconds;
+- (NSDate *) dateWithoutTime;
 
 // Date extremes
 - (NSDate *) dateAtStartOfDay;
+- (NSDate *) dateAtMiddleOfDay;
 - (NSDate *) dateAtEndOfDay;
+- (NSDate *) startOfWeek;
+- (NSDate *) endOfWeek;
 
 // Retrieving intervals
 - (NSInteger) minutesAfterDate: (NSDate *) aDate;
@@ -93,7 +100,7 @@
 - (NSInteger) hoursBeforeDate: (NSDate *) aDate;
 - (NSInteger) daysAfterDate: (NSDate *) aDate;
 - (NSInteger) daysBeforeDate: (NSDate *) aDate;
-- (NSInteger)distanceInDaysToDate:(NSDate *)anotherDate;
+- (NSInteger) distanceInDaysToDate:(NSDate *)anotherDate;
 
 // Decomposing dates
 @property (readonly) NSInteger nearestHour;
@@ -106,4 +113,5 @@
 @property (readonly) NSInteger weekday;
 @property (readonly) NSInteger nthWeekday; // e.g. 2nd Tuesday of the month == 2
 @property (readonly) NSInteger year;
+
 @end

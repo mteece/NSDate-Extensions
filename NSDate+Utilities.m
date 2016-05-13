@@ -15,7 +15,7 @@
 #import "NSDate+Utilities.h"
 
 // Thanks, AshFurrow
-static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit | NSDayCalendarUnit | NSWeekCalendarUnit |  NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit | NSWeekdayCalendarUnit | NSWeekdayOrdinalCalendarUnit);
+static const unsigned componentFlags = (NSCalendarUnitYear| NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitWeekOfYear |  NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond | NSCalendarUnitWeekday | NSCalendarUnitWeekdayOrdinal);
 
 @implementation NSDate (Utilities)
 
@@ -173,14 +173,14 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 // This hard codes the assumption that a week is 7 days
 - (BOOL) isSameWeekAsDate: (NSDate *) aDate
 {
-	NSDateComponents *components1 = [[NSDate currentCalendar] components:componentFlags fromDate:self];
-	NSDateComponents *components2 = [[NSDate currentCalendar] components:componentFlags fromDate:aDate];
-	
-	// Must be same week. 12/31 and 1/1 will both be week "1" if they are in the same week
-	if (components1.week != components2.week) return NO;
-	
-	// Must have a time interval under 1 week. Thanks @aclark
-	return (abs([self timeIntervalSinceDate:aDate]) < D_WEEK);
+    NSDateComponents *components1 = [[NSDate currentCalendar] components:componentFlags fromDate:self];
+    NSDateComponents *components2 = [[NSDate currentCalendar] components:componentFlags fromDate:aDate];
+    
+    // Must be same week. 12/31 and 1/1 will both be week "1" if they are in the same week
+    if (components1.weekOfYear != components2.weekOfYear) return NO;
+    
+    // Must have a time interval under 1 week. Thanks @aclark
+    return (fabs([self timeIntervalSinceDate:aDate]) < D_WEEK);
 }
 
 - (BOOL) isThisWeek
@@ -205,8 +205,8 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 // Thanks, mspasov
 - (BOOL) isSameMonthAsDate: (NSDate *) aDate
 {
-    NSDateComponents *components1 = [[NSDate currentCalendar] components:NSYearCalendarUnit | NSMonthCalendarUnit fromDate:self];
-    NSDateComponents *components2 = [[NSDate currentCalendar] components:NSYearCalendarUnit | NSMonthCalendarUnit fromDate:aDate];
+    NSDateComponents *components1 = [[NSDate currentCalendar] components:NSCalendarUnitYear | NSCalendarUnitMonth fromDate:self];
+    NSDateComponents *components2 = [[NSDate currentCalendar] components:NSCalendarUnitYear | NSCalendarUnitMonth fromDate:aDate];
     return ((components1.month == components2.month) &&
             (components1.year == components2.year));
 }
@@ -229,9 +229,9 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 
 - (BOOL) isSameYearAsDate: (NSDate *) aDate
 {
-	NSDateComponents *components1 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:self];
-	NSDateComponents *components2 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:aDate];
-	return (components1.year == components2.year);
+    NSDateComponents *components1 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:self];
+    NSDateComponents *components2 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:aDate];
+    return (components1.year == components2.year);
 }
 
 - (BOOL) isThisYear
@@ -242,18 +242,18 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 
 - (BOOL) isNextYear
 {
-	NSDateComponents *components1 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:self];
-	NSDateComponents *components2 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:[NSDate date]];
-	
-	return (components1.year == (components2.year + 1));
+    NSDateComponents *components1 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:self];
+    NSDateComponents *components2 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]];
+    
+    return (components1.year == (components2.year + 1));
 }
 
 - (BOOL) isLastYear
 {
-	NSDateComponents *components1 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:self];
-	NSDateComponents *components2 = [[NSDate currentCalendar] components:NSYearCalendarUnit fromDate:[NSDate date]];
-	
-	return (components1.year == (components2.year - 1));
+    NSDateComponents *components1 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:self];
+    NSDateComponents *components2 = [[NSDate currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]];
+    
+    return (components1.year == (components2.year - 1));
 }
 
 - (BOOL) isEarlierThanDate: (NSDate *) aDate
@@ -282,7 +282,7 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 #pragma mark - Roles
 - (BOOL) isTypicallyWeekend
 {
-    NSDateComponents *components = [[NSDate currentCalendar] components:NSWeekdayCalendarUnit fromDate:self];
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitWeekday fromDate:self];
     if ((components.weekday == 1) ||
         (components.weekday == 7))
         return YES;
@@ -361,6 +361,30 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 	return [self dateByAddingMinutes: (dMinutes * -1)];
 }
 
+- (NSDate *) dateByAddingSeconds: (NSInteger) dSeconds
+{
+    NSTimeInterval aTimeInterval = [self timeIntervalSinceReferenceDate] + D_SECOND * dSeconds;
+    NSDate *newDate = [NSDate dateWithTimeIntervalSinceReferenceDate:aTimeInterval];
+    return newDate;
+}
+
+- (NSDate *) dateBySubtractingSeconds: (NSInteger) dSeconds
+{
+    return [self dateByAddingSeconds: (dSeconds * -1)];
+}
+
+- (NSDate *) dateWithoutTime
+{
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitYear| NSCalendarUnitMonth | NSCalendarUnitDay fromDate:self];
+    components.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+    components.hour = 0;
+    components.minute = 0;
+    components.second = 0;
+    components.nanosecond = 0;
+    return [[NSDate currentCalendar] dateFromComponents:components];
+}
+
+
 - (NSDateComponents *) componentsWithOffsetFromDate: (NSDate *) aDate
 {
 	NSDateComponents *dTime = [[NSDate currentCalendar] components:componentFlags fromDate:aDate toDate:self options:0];
@@ -371,22 +395,47 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 
 - (NSDate *) dateAtStartOfDay
 {
-	NSDateComponents *components = [[NSDate currentCalendar] components:componentFlags fromDate:self];
-	components.hour = 0;
-	components.minute = 0;
-	components.second = 0;
-	return [[NSDate currentCalendar] dateFromComponents:components];
+    // Snapping to the start of the day (ie. flooring the date) is a straightforward process of breaking down the date, excluding the time components, and reconstructing the date.
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitYear| NSCalendarUnitMonth | NSCalendarUnitDay fromDate:self];
+    return [[NSDate currentCalendar] dateFromComponents:components];
+}
+
+- (NSDate *) dateAtMiddleOfDay
+{
+    // Snapping to the middle of the day (ie. center the date) is similar but with the addition that we now set the time to the middle of the day.
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitYear| NSCalendarUnitMonth | NSCalendarUnitDay fromDate:self];
+    [components setHour:12];
+    [components setMinute:0];
+    [components setSecond:0];
+    return [[NSDate currentCalendar] dateFromComponents:components];
 }
 
 // Thanks gsempe & mteece
 - (NSDate *) dateAtEndOfDay
 {
-	NSDateComponents *components = [[NSDate currentCalendar] components:componentFlags fromDate:self];
-	components.hour = 23; // Thanks Aleksey Kononov
-	components.minute = 59;
-	components.second = 59;
-	return [[NSDate currentCalendar] dateFromComponents:components];
+    // Snapping to the end of the day (ie. ceiling the date) is similar but with the addition that we now set the time to the end of the day.
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitYear| NSCalendarUnitMonth | NSCalendarUnitDay fromDate:self];
+    [components setHour:23];
+    [components setMinute:59];
+    [components setSecond:59];
+    return [[NSDate currentCalendar] dateFromComponents:components];
 }
+
+- (NSDate*) startOfWeek
+{
+    NSDate *startOfWeek;
+    [[NSDate currentCalendar] rangeOfUnit:NSCalendarUnitWeekOfYear startDate:&startOfWeek interval:nil forDate:self];
+    return startOfWeek;
+}
+
+- (NSDate*) endOfWeek
+{
+    NSDate *startOfWeek;
+    NSTimeInterval interval;
+    [[NSDate currentCalendar] rangeOfUnit:NSCalendarUnitWeekOfYear startDate:&startOfWeek interval:&interval forDate:self];
+    return [startOfWeek dateByAddingTimeInterval:interval-1];
+}
+
 
 #pragma mark - Retrieving Intervals
 
@@ -430,8 +479,7 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 // I have not yet thoroughly tested this
 - (NSInteger)distanceInDaysToDate:(NSDate *)anotherDate
 {
-    NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
-    NSDateComponents *components = [gregorianCalendar components:NSDayCalendarUnit fromDate:self toDate:anotherDate options:0];
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitDay fromDate:self toDate:anotherDate options:0];
     return components.day;
 }
 
@@ -439,10 +487,10 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 
 - (NSInteger) nearestHour
 {
-	NSTimeInterval aTimeInterval = [[NSDate date] timeIntervalSinceReferenceDate] + D_MINUTE * 30;
-	NSDate *newDate = [NSDate dateWithTimeIntervalSinceReferenceDate:aTimeInterval];
-	NSDateComponents *components = [[NSDate currentCalendar] components:NSHourCalendarUnit fromDate:newDate];
-	return components.hour;
+    NSTimeInterval aTimeInterval = [[NSDate date] timeIntervalSinceReferenceDate] + D_MINUTE * 30;
+    NSDate *newDate = [NSDate dateWithTimeIntervalSinceReferenceDate:aTimeInterval];
+    NSDateComponents *components = [[NSDate currentCalendar] components:NSCalendarUnitHour fromDate:newDate];
+    return components.hour;
 }
 
 - (NSInteger) hour
@@ -477,8 +525,8 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 
 - (NSInteger) week
 {
-	NSDateComponents *components = [[NSDate currentCalendar] components:componentFlags fromDate:self];
-	return components.week;
+    NSDateComponents *components = [[NSDate currentCalendar] components:componentFlags fromDate:self];
+    return components.weekOfYear;
 }
 
 - (NSInteger) weekday
@@ -498,4 +546,5 @@ static const unsigned componentFlags = (NSYearCalendarUnit| NSMonthCalendarUnit 
 	NSDateComponents *components = [[NSDate currentCalendar] components:componentFlags fromDate:self];
 	return components.year;
 }
+
 @end
